@@ -46,6 +46,17 @@ class myWindow:
         self.file_list.pop(select_idx[0])
         self.list_box.delete(select_idx)
 
+
+    def pd_read_csv(self, file_path, rows=None, skiprow=None):
+        for decode in ('gb18030', 'gbk','utf-8'):
+            try:    
+                data = pd.read_csv(file_path,encoding=decode,error_bad_lines=False, nrows=rows, skiprows=skiprow)
+                return data
+            except:
+                pass
+        print('%sencoding errow'.format(file_path))
+        os._exit(0)
+
     def name_filter(self, df):
         df_name = df['Product Name '].str.slice(stop=self.product_name_cmp_num)
         df_com_l = np.empty(df_name.shape[0]+1, dtype=df_name.dtype)
@@ -57,14 +68,13 @@ class myWindow:
         return res
 
     def save_file(self):
-        print(self.file_list)
         result = None
         asin_set = []
         name_set = []
         if len(self.file_list) == 0: return
-        first_two_lines = pd.read_csv(self.file_list[0], nrows=1, encoding = "GB18030")
+        first_two_lines = self.pd_read_csv(self.file_list[0], rows=1)
         for file in self.file_list:
-            df_raw = pd.read_csv(file, skiprows=2, encoding = "GB18030")
+            df_raw = self.pd_read_csv(file, skiprow=2)
             df = self.name_filter(df_raw)
             if 'ASIN ' not in df.columns:
                 dialog.Dialog(None, {'title': '提示', 'text': file + '不包含列ASIN', 'bitmap': 'warning', 'default': 0,
@@ -96,7 +106,6 @@ class myWindow:
                 asin_select_idx = np.isin(df['ASIN '], asin_set, invert=True)
                 name_select_idx = np.isin(df['Product Name '].str.slice(stop=self.product_name_cmp_num), name_set, invert=True)
                 select_idx = np.logical_and(asin_select_idx, name_select_idx)
-                print(name_select_idx)
                 result = pd.concat([result, df[select_idx]])
                 asin_set += df['ASIN '][select_idx].tolist()
 
